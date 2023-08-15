@@ -9,21 +9,20 @@ import (
 
 	"github.com/juicyluv/structure-experiments/internal/domain"
 	"github.com/juicyluv/structure-experiments/internal/infrastructure/repository"
-	"github.com/juicyluv/structure-experiments/pkg/postgres"
 )
 
 type PostRepository struct {
-	*postgres.Postgres
+	driver Driver
 }
 
-func NewPostRepository(pg *postgres.Postgres) *PostRepository {
-	return &PostRepository{pg}
+func NewPostRepository(dr Driver) *PostRepository {
+	return &PostRepository{driver: dr}
 }
 
 func (r *PostRepository) GetPost(ctx context.Context, id int64) (*domain.Post, error) {
 	var post domain.Post
 
-	err := r.Pool.QueryRow(ctx, `
+	err := r.driver.QueryRow(ctx, `
 		SELECT 
 		    id, author_id, title, content, created_at, updated_at
 		FROM posts
@@ -49,7 +48,7 @@ func (r *PostRepository) GetPost(ctx context.Context, id int64) (*domain.Post, e
 func (r *PostRepository) AddPost(ctx context.Context, post *domain.Post) (int64, error) {
 	var id int64
 
-	err := r.Pool.QueryRow(ctx, `
+	err := r.driver.QueryRow(ctx, `
 		INSERT INTO posts(author_id, title, content)
 		VALUES($1, $2, $3)
 		RETURNING id`,
@@ -81,7 +80,7 @@ func (r *PostRepository) GetPosts(ctx context.Context, filters *domain.GetPostsF
 		filter = "WHERE " + filter
 	}
 
-	rows, err := r.Pool.Query(ctx, fmt.Sprintf(`
+	rows, err := r.driver.Query(ctx, fmt.Sprintf(`
 		SELECT 
 		    id, author_id, title, content, created_at, updated_at
 		FROM posts
@@ -115,7 +114,7 @@ func (r *PostRepository) GetPosts(ctx context.Context, filters *domain.GetPostsF
 }
 
 func (r *PostRepository) UpdatePost(ctx context.Context, post *domain.Post) error {
-	_, err := r.Pool.Exec(ctx, `
+	_, err := r.driver.Exec(ctx, `
 		UPDATE posts
 		SET title=$2, content=$3, updated_at=now()
 		WHERE id=$1`,
@@ -131,7 +130,7 @@ func (r *PostRepository) UpdatePost(ctx context.Context, post *domain.Post) erro
 }
 
 func (r *PostRepository) DeletePost(ctx context.Context, id int64) error {
-	_, err := r.Pool.Exec(ctx, `DELETE FROM posts WHERE id=$1`, id)
+	_, err := r.driver.Exec(ctx, `DELETE FROM posts WHERE id=$1`, id)
 	if err != nil {
 		return fmt.Errorf("deleting post: %w", err)
 	}

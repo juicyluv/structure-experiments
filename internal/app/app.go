@@ -33,19 +33,15 @@ func Run() error {
 	cfg := config.Get()
 
 	// Connect to Postgres
-	pgConf := cfg.Repository.Postgres
-	pg, err := postgres.New(
-		ctx,
-		postgres.NewConnString(pgConf.Port, pgConf.Host, pgConf.Username, pgConf.Password, pgConf.Database),
-	)
+	pg, err := postgres.New(ctx, cfg.Repository.Postgres.DSN)
 	if err != nil {
 		return fmt.Errorf("failed to create postgres: %v", err)
 	}
 	defer pg.Close()
 
 	// Initialize repositories
-	postRepo := postgresql.NewPostRepository(pg)
-	commentRepo := postgresql.NewCommentRepository(pg)
+	postRepo := postgresql.NewPostRepository(pg.Pool)
+	commentRepo := postgresql.NewCommentRepository(pg.Pool)
 
 	// Initialize services
 	postService := service.NewPostService(postRepo)

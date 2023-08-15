@@ -70,7 +70,3 @@ func (p *Postgres) Close() {
 		p.Pool.Close()
 	}
 }
-
-func NewConnString(port uint16, host, user, pass, database string) string {
-	return fmt.Sprintf("postgres://%s:%s@%s:%d/%s", user, pass, host, port, database)
-}

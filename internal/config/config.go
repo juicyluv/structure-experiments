@@ -21,11 +21,7 @@ type Config struct {
 	} `yaml:"httpServer"`
 	Repository struct {
 		Postgres struct {
-			Port     uint16 `yaml:"port"`
-			Host     string `yaml:"host"`
-			Username string `yaml:"username"`
-			Password string `yaml:"password"`
-			Database string `yaml:"database"`
+			DSN string `yaml:"dsn"`
 		} `yaml:"postgres"`
 	} `yaml:"repository"`
 }

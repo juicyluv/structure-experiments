@@ -42,5 +42,38 @@ func (s *PostService) GetPost(ctx context.Context, id int64) (*domain.Post, erro
 }
 
 func (s *PostService) AddPost(ctx context.Context, post *domain.Post) (int64, error) {
-	return 0, nil
+	err := post.Validate()
+	if err != nil {
+		return 0, err
+	}
+
+	id, err := s.postRepository.AddPost(ctx, post)
+	if err != nil {
+		return 0, fmt.Errorf("adding post: %w", err)
+	}
+
+	return id, nil
+}
+
+func (s *PostService) UpdatePost(ctx context.Context, post *domain.Post) error {
+	err := post.Validate()
+	if err != nil {
+		return err
+	}
+
+	_, err = s.postRepository.GetPost(ctx, post.ID)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return apperror.NewNotFoundError(err, "Post not found.", "id")
+		}
+
+		return fmt.Errorf("getting post %d: %w", post.ID, err)
+	}
+
+	err = s.postRepository.UpdatePost(ctx, post)
+	if err != nil {
+		return fmt.Errorf("adding post: %w", err)
+	}
+
+	return nil
 }

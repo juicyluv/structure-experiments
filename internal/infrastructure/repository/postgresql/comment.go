@@ -5,19 +5,18 @@ import (
 	"fmt"
 
 	"github.com/juicyluv/structure-experiments/internal/domain"
-	"github.com/juicyluv/structure-experiments/pkg/postgres"
 )
 
 type CommentRepository struct {
-	*postgres.Postgres
+	driver Driver
 }
 
-func NewCommentRepository(pg *postgres.Postgres) *CommentRepository {
-	return &CommentRepository{pg}
+func NewCommentRepository(dr Driver) *CommentRepository {
+	return &CommentRepository{driver: dr}
 }
 
 func (r *CommentRepository) GetComments(ctx context.Context, postID int64) ([]domain.Comment, error) {
-	rows, err := r.Pool.Query(ctx, `
+	rows, err := r.driver.Query(ctx, `
 		SELECT 
 		    id, author_id, post_id, content, comment_id, created_at, updated_at
 		FROM posts
@@ -50,7 +49,7 @@ func (r *CommentRepository) GetComments(ctx context.Context, postID int64) ([]do
 func (r *CommentRepository) AddComment(ctx context.Context, comment *domain.Comment) (int64, error) {
 	var id int64
 
-	err := r.Pool.QueryRow(ctx, `
+	err := r.driver.QueryRow(ctx, `
 		INSERT INTO comments(author_id, post_id, content, comment_id)
 		VALUES($1,$2,$3,$4)
 		RETURNING id`,
@@ -67,7 +66,7 @@ func (r *CommentRepository) AddComment(ctx context.Context, comment *domain.Comm
 }
 
 func (r *CommentRepository) UpdateComment(ctx context.Context, comment *domain.Comment) error {
-	_, err := r.Pool.Exec(ctx, `
+	_, err := r.driver.Exec(ctx, `
 		UPDATE comments
 		SET content=$2, updated_at=now()
 		WHERE id=$1`, comment.ID, comment.Content)
@@ -79,7 +78,7 @@ func (r *CommentRepository) UpdateComment(ctx context.Context, comment *domain.C
 }
 
 func (r *CommentRepository) DeleteComment(ctx context.Context, id int64) error {
-	_, err := r.Pool.Exec(ctx, `DELETE FROM comments WHERE id=$1`, id)
+	_, err := r.driver.Exec(ctx, `DELETE FROM comments WHERE id=$1`, id)
 	if err != nil {
 		return fmt.Errorf("deleting comment: %w", err)
 	}
