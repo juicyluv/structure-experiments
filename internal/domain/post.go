@@ -29,7 +29,7 @@ func (p Post) Validate() error {
 }
 
 type GetPostsFilters struct {
-	AuthorID int64
-	Page     int16
-	Count    int16
+	AuthorID     int64
+	Page         int
+	PostsPerPage int
 }
