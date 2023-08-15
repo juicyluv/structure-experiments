@@ -13,6 +13,10 @@ import (
 type (
 	PostRepository interface {
 		GetPost(ctx context.Context, id int64) (*domain.Post, error)
+		GetPosts(ctx context.Context, filters *domain.GetPostsFilters) ([]domain.Post, error)
+		AddPost(ctx context.Context, post *domain.Post) (int64, error)
+		UpdatePost(ctx context.Context, post *domain.Post) error
+		DeletePost(ctx context.Context, id int64) error
 	}
 )
 

@@ -13,6 +13,8 @@ import (
 type CommentRepository interface {
 	GetComments(ctx context.Context, postID int64) ([]domain.Comment, error)
 	AddComment(ctx context.Context, comment *domain.Comment) (int64, error)
+	UpdateComment(ctx context.Context, comment *domain.Comment) error
+	DeleteComment(ctx context.Context, id int64) error
 }
 
 type CommentService struct {

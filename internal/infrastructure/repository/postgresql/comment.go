@@ -23,15 +23,13 @@ func (r *CommentRepository) GetComments(ctx context.Context, postID int64) ([]do
 		FROM posts
 		WHERE id=$1`, postID)
 	if err != nil {
-		return nil, fmt.Errorf("selecting comments: %v", err)
+		return nil, fmt.Errorf("selecting comments: %w", err)
 	}
 	defer rows.Close()
 
-	var (
-		comment  domain.Comment
-		comments []domain.Comment
-	)
+	var comments []domain.Comment
 	for rows.Next() {
+		var comment domain.Comment
 		err = rows.Scan(
 			&comment.ID,
 			&comment.AuthorID,
@@ -66,4 +64,25 @@ func (r *CommentRepository) AddComment(ctx context.Context, comment *domain.Comm
 	}
 
 	return id, nil
+}
+
+func (r *CommentRepository) UpdateComment(ctx context.Context, comment *domain.Comment) error {
+	_, err := r.Pool.Exec(ctx, `
+		UPDATE comments
+		SET content=$2, updated_at=now()
+		WHERE id=$1`, comment.ID, comment.Content)
+	if err != nil {
+		return fmt.Errorf("updating comment: %w", err)
+	}
+
+	return nil
+}
+
+func (r *CommentRepository) DeleteComment(ctx context.Context, id int64) error {
+	_, err := r.Pool.Exec(ctx, `DELETE FROM comments WHERE id=$1`, id)
+	if err != nil {
+		return fmt.Errorf("deleting comment: %w", err)
+	}
+
+	return nil
 }
