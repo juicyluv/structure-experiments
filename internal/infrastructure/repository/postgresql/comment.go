@@ -19,8 +19,8 @@ func (r *CommentRepository) GetComments(ctx context.Context, postID int64) ([]do
 	rows, err := r.driver.Query(ctx, `
 		SELECT 
 		    id, author_id, post_id, content, comment_id, created_at, updated_at
-		FROM posts
-		WHERE id=$1`, postID)
+		FROM comments
+		WHERE post_id=$1`, postID)
 	if err != nil {
 		return nil, fmt.Errorf("selecting comments: %w", err)
 	}
@@ -39,11 +39,34 @@ func (r *CommentRepository) GetComments(ctx context.Context, postID int64) ([]do
 			&comment.UpdatedAt,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("scanning port: %w", err)
+			return nil, fmt.Errorf("scanning comment: %w", err)
 		}
 	}
 
 	return comments, nil
+}
+
+func (r *CommentRepository) GetComment(ctx context.Context, id int64) (*domain.Comment, error) {
+	var comment domain.Comment
+
+	err := r.driver.QueryRow(ctx, `
+		SELECT 
+		    id, author_id, post_id, content, comment_id, created_at, updated_at
+		FROM comments
+		WHERE id=$1`, id).Scan(
+		&comment.ID,
+		&comment.AuthorID,
+		&comment.PostID,
+		&comment.Content,
+		&comment.CommentID,
+		&comment.CreatedAt,
+		&comment.UpdatedAt,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("scanning comment: %w", err)
+	}
+
+	return &comment, nil
 }
 
 func (r *CommentRepository) AddComment(ctx context.Context, comment *domain.Comment) (int64, error) {

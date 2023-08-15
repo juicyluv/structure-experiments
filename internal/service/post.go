@@ -10,15 +10,14 @@ import (
 	"github.com/juicyluv/structure-experiments/internal/service/apperror"
 )
 
-type (
-	PostRepository interface {
-		GetPost(ctx context.Context, id int64) (*domain.Post, error)
-		GetPosts(ctx context.Context, filters *domain.GetPostsFilters) ([]domain.Post, error)
-		AddPost(ctx context.Context, post *domain.Post) (int64, error)
-		UpdatePost(ctx context.Context, post *domain.Post) error
-		DeletePost(ctx context.Context, id int64) error
-	}
-)
+//go:generate mockgen -source=post.go -destination=./mocks/post.go -package=mocks
+type PostRepository interface {
+	GetPost(ctx context.Context, id int64) (*domain.Post, error)
+	GetPosts(ctx context.Context, filters *domain.GetPostsFilters) ([]domain.Post, error)
+	AddPost(ctx context.Context, post *domain.Post) (int64, error)
+	UpdatePost(ctx context.Context, post *domain.Post) error
+	DeletePost(ctx context.Context, id int64) error
+}
 
 type PostService struct {
 	postRepository PostRepository
@@ -39,6 +38,20 @@ func (s *PostService) GetPost(ctx context.Context, id int64) (*domain.Post, erro
 	}
 
 	return post, nil
+}
+
+func (s *PostService) GetPosts(ctx context.Context, filters *domain.GetPostsFilters) ([]domain.Post, error) {
+	err := filters.Validate()
+	if err != nil {
+		return nil, err
+	}
+
+	posts, err := s.postRepository.GetPosts(ctx, filters)
+	if err != nil {
+		return nil, fmt.Errorf("getting post: %v", err)
+	}
+
+	return posts, nil
 }
 
 func (s *PostService) AddPost(ctx context.Context, post *domain.Post) (int64, error) {
@@ -72,7 +85,25 @@ func (s *PostService) UpdatePost(ctx context.Context, post *domain.Post) error {
 
 	err = s.postRepository.UpdatePost(ctx, post)
 	if err != nil {
-		return fmt.Errorf("adding post: %w", err)
+		return fmt.Errorf("updating post: %w", err)
+	}
+
+	return nil
+}
+
+func (s *PostService) DeletePost(ctx context.Context, id int64) error {
+	post, err := s.postRepository.GetPost(ctx, id)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return apperror.NewNotFoundError(err, "Post not found.", "id")
+		}
+
+		return fmt.Errorf("getting post %d: %w", post.ID, err)
+	}
+
+	err = s.postRepository.DeletePost(ctx, post.ID)
+	if err != nil {
+		return fmt.Errorf("deleting post: %w", err)
 	}
 
 	return nil

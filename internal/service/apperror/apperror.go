@@ -1,6 +1,9 @@
 package apperror
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 type ErrorType string
 
@@ -18,7 +21,16 @@ type AppError struct {
 }
 
 func (a AppError) Error() string {
-	return fmt.Sprintf("%s: %v", a.message, a.source)
+	return fmt.Errorf("%s: %w", a.message, a.source).Error()
+}
+
+func (a AppError) Is(err error) bool {
+	var ae AppError
+	if !errors.As(err, &ae) {
+		return errors.Is(err, a.source)
+	}
+
+	return a.etype == ae.etype && a.message == ae.message && a.field == ae.field && errors.Is(err, a.source)
 }
 
 func (a AppError) ErrorType() ErrorType {

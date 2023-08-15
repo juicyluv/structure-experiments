@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/juicyluv/structure-experiments/internal/service/apperror"
@@ -17,15 +18,20 @@ type Comment struct {
 	UpdatedAt *time.Time
 }
 
-func NewComment(authorID int64, postID int64, content string, commentID *int64) (*Comment, error) {
-	if content == "" {
-		return nil, apperror.NewInvalidRequestError(ErrRequired, "Content is required.", "content")
+const commentContentMaxLength = 512
+
+func (c *Comment) Validate() error {
+	if c.Content == "" {
+		return apperror.NewInvalidRequestError(ErrRequired, "Content is required.", "content")
 	}
 
-	return &Comment{
-		AuthorID:  authorID,
-		PostID:    postID,
-		Content:   content,
-		CommentID: commentID,
-	}, nil
+	if len(c.Content) > commentContentMaxLength {
+		return apperror.NewInvalidRequestError(
+			ErrInvalidValue,
+			fmt.Sprintf("Content must be less than %d characters.", commentContentMaxLength),
+			"content",
+		)
+	}
+
+	return nil
 }

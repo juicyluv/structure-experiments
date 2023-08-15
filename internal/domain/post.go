@@ -29,7 +29,7 @@ func (p Post) Validate() error {
 
 	if len(p.Title) > postTitleMaxLength {
 		return apperror.NewInvalidRequestError(
-			ErrRequired,
+			ErrInvalidValue,
 			fmt.Sprintf("Title must be less than %d characters.", postTitleMaxLength),
 			"title",
 		)
@@ -41,7 +41,7 @@ func (p Post) Validate() error {
 
 	if len(p.Content) > postContentMaxLength {
 		return apperror.NewInvalidRequestError(
-			ErrRequired,
+			ErrInvalidValue,
 			fmt.Sprintf("Content must be less than %d characters.", postContentMaxLength),
 			"content",
 		)
@@ -54,4 +54,24 @@ type GetPostsFilters struct {
 	AuthorID     int64
 	Page         int
 	PostsPerPage int
+}
+
+func (f *GetPostsFilters) Validate() error {
+	if f.Page < 1 {
+		return apperror.NewInvalidRequestError(
+			ErrInvalidValue,
+			"Page must be greater than zero.",
+			"page",
+		)
+	}
+
+	if f.PostsPerPage < 1 {
+		return apperror.NewInvalidRequestError(
+			ErrInvalidValue,
+			"Posts per page must be greater than zero.",
+			"postsPerPage",
+		)
+	}
+
+	return nil
 }
