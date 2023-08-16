@@ -128,3 +128,84 @@ func TestCommentService_GetComments(t *testing.T) {
 		})
 	}
 }
+
+func TestCommentService_AddComment(t *testing.T) {
+	t.Parallel()
+
+	srv, commRepo, postRepo := comment(t)
+
+	tests := []struct {
+		test
+		com  *domain.Comment
+		mock func(com *domain.Comment)
+	}{
+		{
+			test: test{
+				name: "success",
+				res:  int64(1),
+				err:  nil,
+			},
+			mock: func(com *domain.Comment) {
+				postRepo.EXPECT().GetPost(context.Background(), com.PostID).Return(&domain.Post{ID: com.PostID}, nil)
+				commRepo.EXPECT().AddComment(context.Background(), com).Return(int64(1), nil)
+			},
+			com: &domain.Comment{
+				AuthorID: 1,
+				PostID:   2,
+				Content:  "content",
+			},
+		},
+		{
+			test: test{
+				name:    "validation error",
+				res:     int64(0),
+				wantErr: true,
+				err:     domain.ErrRequired,
+			},
+			mock: func(com *domain.Comment) {
+			},
+			com: &domain.Comment{
+				AuthorID: 1,
+				PostID:   2,
+				Content:  "",
+			},
+		},
+		{
+			test: test{
+				name:    "validation error",
+				res:     int64(0),
+				wantErr: true,
+				err:     domain.ErrRequired,
+			},
+			mock: func(com *domain.Comment) {
+			},
+			com: &domain.Comment{
+				AuthorID: 1,
+				PostID:   2,
+				Content:  "",
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			tc.mock(tc.com)
+
+			res, err := srv.AddComment(context.Background(), tc.com)
+
+			require.Equal(t, res, tc.res)
+
+			if !tc.wantErr {
+				require.NoError(t, err)
+				return
+			}
+
+			require.Error(t, err)
+			if tc.err != nil {
+				require.ErrorIs(t, err, tc.err)
+			}
+		})
+	}
+}
