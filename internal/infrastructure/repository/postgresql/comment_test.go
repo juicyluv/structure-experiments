@@ -2,6 +2,7 @@ package postgresql_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/pashagolub/pgxmock/v2"
@@ -19,12 +20,13 @@ func TestCommentRepository_AddComment(t *testing.T) {
 
 	repo := postgresql.NewCommentRepository(mock)
 
+	q := "INSERT INTO comments"
+
 	tests := []struct {
 		name     string
 		comment  *domain.Comment
 		response int64
 		wantErr  bool
-		err      error
 		mock     func(comment *domain.Comment, id int64)
 	}{
 		{
@@ -40,7 +42,7 @@ func TestCommentRepository_AddComment(t *testing.T) {
 					AddRow(id)
 
 				mock.
-					ExpectQuery("INSERT INTO comments").
+					ExpectQuery(q).
 					WithArgs(
 						comment.AuthorID,
 						comment.PostID,
@@ -48,6 +50,26 @@ func TestCommentRepository_AddComment(t *testing.T) {
 						comment.CommentID,
 					).WillReturnRows(rows)
 			},
+		},
+		{
+			name: "query error",
+			comment: &domain.Comment{
+				AuthorID: 1,
+				PostID:   2,
+				Content:  "3",
+			},
+			response: 0,
+			mock: func(comment *domain.Comment, id int64) {
+				mock.
+					ExpectQuery(q).
+					WithArgs(
+						comment.AuthorID,
+						comment.PostID,
+						comment.Content,
+						comment.CommentID,
+					).WillReturnError(errors.New("some error"))
+			},
+			wantErr: true,
 		},
 	}
 
@@ -69,7 +91,6 @@ func TestCommentRepository_AddComment(t *testing.T) {
 			}
 
 			require.Error(tt, err)
-			require.ErrorIs(tt, err, tc.err)
 		})
 	}
 }
